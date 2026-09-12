@@ -5,10 +5,13 @@ import java.time.LocalDateTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.huganstorev2.models.cart.entity.Cart;
 import com.example.huganstorev2.models.user.entity.*;
 import com.example.huganstorev2.models.user.repository.UserRepository;
 import com.example.huganstorev2.models.user.service.Dtos.LoginRequest;
 import com.example.huganstorev2.models.user.service.Dtos.RegisterRequest;
+
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
@@ -29,6 +32,7 @@ public class UserService {
         }
     }
     // Đăng ký
+    @Transactional 
     public User registerUser(RegisterRequest request){
         if(userRepository.existsByEmail(request.getEmail())){
             throw new RuntimeException("Email đã tồn tại!");
@@ -43,6 +47,11 @@ public class UserService {
         user.setFullName(request.getFullName());
         user.setRole(Role.USER);
         user.setCreatedAt(LocalDateTime.now());
+        
+        Cart cart = new Cart();
+        cart.setUser(user);
+        user.setCart(cart);
+        
         return userRepository.save(user);
     }
     // Đăng nhập
