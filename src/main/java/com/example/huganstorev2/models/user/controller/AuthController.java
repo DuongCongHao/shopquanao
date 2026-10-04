@@ -66,10 +66,16 @@ public class AuthController {
     @PutMapping("/change-password")
     @Operation(summary = "Đổi mật khẩu tài khoản đang đăng nhập")
     public ResponseEntity<?> changePassword(
-            @RequestBody ChangePasswordRequest request){
+            @RequestBody ChangePasswordRequest request) {
         try {
-            String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập lại!");
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập lại!");
+            }
+            String email = (String) auth.getPrincipal();
+            if (email == null || email.equals("anonymousUser")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập lại!");
+            }
             userService.changePassword(email, request.getCurrentPassword(), request.getNewPassword());
             return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
         } catch (RuntimeException e) {
