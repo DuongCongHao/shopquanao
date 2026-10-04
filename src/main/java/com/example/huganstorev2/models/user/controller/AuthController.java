@@ -2,10 +2,14 @@ package com.example.huganstorev2.models.user.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
 
 import com.example.huganstorev2.config.JwtService;
 import com.example.huganstorev2.models.user.entity.User;
@@ -13,6 +17,7 @@ import com.example.huganstorev2.models.user.service.UserService;
 import com.example.huganstorev2.models.user.service.Dtos.LoginRequest;
 import com.example.huganstorev2.models.user.service.Dtos.LoginResponse;
 import com.example.huganstorev2.models.user.service.Dtos.RegisterRequest;
+import com.example.huganstorev2.models.user.service.Dtos.ChangePasswordRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -55,6 +60,20 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch(RuntimeException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Đổi mật khẩu tài khoản đang đăng nhập")
+    public ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordRequest request){
+        try {
+            String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập lại!");
+            userService.changePassword(email, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công!"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
