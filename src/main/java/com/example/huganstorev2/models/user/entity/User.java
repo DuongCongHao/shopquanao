@@ -32,6 +32,11 @@ public class User {
     @Column (nullable = false)
     private String fullName;
     private LocalDateTime createdAt;
+    @Column(length = 36)
+    @JsonIgnore
+    private String activeSessionId;
+    @JsonIgnore
+    private LocalDateTime sessionLastSeenAt;
     @JsonIgnore 
     private String password;
     @Enumerated (EnumType.STRING)

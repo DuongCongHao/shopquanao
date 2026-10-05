@@ -1,8 +1,18 @@
 package com.example.huganstorev2.models.product.service;
 
 import com.example.huganstorev2.models.product.repository.VariantRepository;
+import com.example.huganstorev2.models.cart.entity.Cart;
+import com.example.huganstorev2.models.cart.entity.CartItem;
+import com.example.huganstorev2.models.cart.repository.CartRepository;
+import com.example.huganstorev2.models.order.entity.CustomerOrder;
+import com.example.huganstorev2.models.order.entity.CustomerOrderItem;
+import com.example.huganstorev2.models.order.repository.CustomerOrderRepository;
+import com.example.huganstorev2.models.product.controller.Dtos.ProductPopularityResponse;
+import java.util.HashMap;
+import java.util.Map;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,16 +33,66 @@ public class ProductService {
     private final VariantRepository variantRepository;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, VariantRepository variantRepository){
+    private final CartRepository cartRepository;
+    private final CustomerOrderRepository orderRepository;
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, VariantRepository variantRepository,
+            CartRepository cartRepository, CustomerOrderRepository orderRepository){
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.variantRepository = variantRepository;
+        this.cartRepository = cartRepository;
+        this.orderRepository = orderRepository;
     }
     // Lấy danh sách sản phẩm
     public List<ProductResponse> getAllProduct(){
         return productRepository.findAll().stream()
         .map(ProductResponse::new)
         .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductPopularityResponse> getProductPopularity(){
+        Map<Long, long[]> quantitiesByProduct = new HashMap<>();
+
+        for (Cart cart : cartRepository.findAll()) {
+            for (CartItem item : cart.getItems()) {
+                Long productId = item.getVariant().getProduct().getId();
+                quantitiesByProduct.computeIfAbsent(productId, ignored -> new long[2])[0] += item.getQuantity();
+            }
+        }
+
+        for (CustomerOrder order : orderRepository.findAll()) {
+            if ("CANCELLED".equalsIgnoreCase(order.getStatus())) continue;
+            for (CustomerOrderItem item : order.getItems()) {
+                if (item.getProductId() == null) continue;
+                quantitiesByProduct.computeIfAbsent(item.getProductId(), ignored -> new long[2])[1] += item.getQuantity();
+            }
+        }
+
+        List<Product> rankedProducts = productRepository.findAll().stream()
+            .sorted((first, second) -> {
+                long[] firstQuantities = quantitiesByProduct.getOrDefault(first.getId(), new long[2]);
+                long[] secondQuantities = quantitiesByProduct.getOrDefault(second.getId(), new long[2]);
+                long firstTotal = firstQuantities[0] + firstQuantities[1];
+                long secondTotal = secondQuantities[0] + secondQuantities[1];
+                int byTotal = Long.compare(secondTotal, firstTotal);
+                if (byTotal != 0) return byTotal;
+                int byOrders = Long.compare(secondQuantities[1], firstQuantities[1]);
+                if (byOrders != 0) return byOrders;
+                int byCarts = Long.compare(secondQuantities[0], firstQuantities[0]);
+                return byCarts != 0 ? byCarts : first.getName().compareToIgnoreCase(second.getName());
+            })
+            .limit(10)
+            .toList();
+
+        List<ProductPopularityResponse> topProducts = new ArrayList<>(rankedProducts.size());
+        for (int index = 0; index < rankedProducts.size(); index++) {
+            Product product = rankedProducts.get(index);
+            long[] quantities = quantitiesByProduct.getOrDefault(product.getId(), new long[2]);
+            topProducts.add(new ProductPopularityResponse(
+                product.getId(), quantities[0], quantities[1], quantities[0] + quantities[1], index + 1));
+        }
+        return topProducts;
     }
     // Lấy danh sách sản phẩm theo id
     public ProductResponse getProductById(Long id){
@@ -67,8 +127,9 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setImgUrl(request.getImgUrl());
+        product.setImages(request.getImages());
         product.setCategory(category);
-        product.setIsPublished(false);
+        product.setIsPublished(request.getIsPublished() != null ? request.getIsPublished() : true);
         product.setCreatedAt(LocalDateTime.now());
         product.setUpdatedAt(LocalDateTime.now());
 
@@ -120,6 +181,9 @@ public class ProductService {
         existingProduct.setDescription(request.getDescription());
         existingProduct.setPrice(request.getPrice());
         existingProduct.setImgUrl(request.getImgUrl());
+        if(request.getImages() != null){
+            existingProduct.setImages(request.getImages());
+        }
 
         if(request.getIsPublished() != null){
             existingProduct.setIsPublished(request.getIsPublished());

@@ -17,6 +17,8 @@ import java.util.List;
 
 @Service 
 public class UserService {
+    public static final int SESSION_TIMEOUT_MINUTES = 5;
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder){
@@ -55,13 +57,56 @@ public class UserService {
         return userRepository.save(user);
     }
     // Đăng nhập
-    public User loginUser(LoginRequest request){
+    @Transactional
+    public User loginUser(LoginRequest request, String sessionId){
         User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new RuntimeException("Tài khoản hoặc mật khẩu không chính xác!"));
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
             throw new RuntimeException("Email hoặc mật khẩu không chính xác!");
         }
+
+        LocalDateTime now = LocalDateTime.now();
+        int claimed = userRepository.claimSession(
+            user.getId(),
+            sessionId,
+            now,
+            now.minusMinutes(SESSION_TIMEOUT_MINUTES)
+        );
+        if (claimed == 0) {
+            throw new RuntimeException("Tài khoản đang hoạt động trên thiết bị khác.");
+        }
         return user;
+    }
+
+    @Transactional
+    public boolean refreshSession(String email, String sessionId) {
+        LocalDateTime now = LocalDateTime.now();
+        return userRepository.refreshSession(
+            email,
+            sessionId,
+            now,
+            now.minusMinutes(SESSION_TIMEOUT_MINUTES)
+        ) > 0;
+    }
+
+    @Transactional
+    public void releaseSession(String email, String sessionId) {
+        userRepository.releaseSession(email, sessionId);
+    }
+
+    // Đổi mật khẩu cho tài khoản đang đăng nhập
+    @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword){
+        if(newPassword == null || newPassword.length() < 6){
+            throw new RuntimeException("Mật khẩu mới phải có ít nhất 6 ký tự!");
+        }
+        User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
+        if(currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())){
+            throw new RuntimeException("Mật khẩu hiện tại không chính xác!");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
     // Lấy toàn bộ danh sách người dùng
     public List<User> getAllUser(){

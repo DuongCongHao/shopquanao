@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import com.example.huganstorev2.models.user.repository.UserRepository;
+import com.example.huganstorev2.models.user.service.UserService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,11 +21,15 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     // BỎ QUA CÁC URL KHÔNG CẦN XÁC THỰC
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
+        if ("POST".equalsIgnoreCase(request.getMethod()) && "/api/v1/orders".equals(path)) {
+            return true;
+        }
         return path.startsWith("/swagger-ui") ||
                path.startsWith("/swagger-ui.html") ||
                path.startsWith("/v3/api-docs") ||
@@ -51,6 +57,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (jwtService.isTokenValid(token)) {
             String email = jwtService.extractEmail(token);
             String role = jwtService.extractRole(token);
+            String sessionId = jwtService.extractSessionId(token);
+
+            if (sessionId == null || !userRepository.existsByEmailAndActiveSessionIdAndSessionLastSeenAtGreaterThanEqual(
+                    email,
+                    sessionId,
+                    java.time.LocalDateTime.now().minusMinutes(UserService.SESSION_TIMEOUT_MINUTES)
+            )) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                return;
+            }
 
             // 3. Tạo danh sách quyền (authorities)
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
@@ -59,6 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 4. Tạo đối tượng Authentication
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(email, null, authorities);
+            authentication.setDetails(sessionId);
 
             // 5. Đặt vào SecurityContext
             SecurityContextHolder.getContext().setAuthentication(authentication);

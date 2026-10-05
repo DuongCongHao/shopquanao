@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,6 +48,16 @@ public class CategoryController {
         Category saveCategory = categoryService.createCategory(category);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(saveCategory);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation (summary = "Cập nhật danh mục - dành cho ADMIN")
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request){
+        Category category = new Category();
+        category.setName(request.getName());
+
+        return ResponseEntity.ok(categoryService.updateCategory(id, category));
     }
 
     @DeleteMapping("/{id}")

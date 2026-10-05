@@ -16,6 +16,7 @@ public class ProductResponse {
     private String description;
     private BigDecimal price;
     private String imgUrl;
+    private List<String> images;
     private Boolean isPublished;
     private Long categoryId;
     private String categoryName;
@@ -27,7 +28,8 @@ public class ProductResponse {
         this.slug = product.getSlug();
         this.description = product.getDescription();
         this.price = product.getPrice();
-        this.imgUrl = product.getImgUrl();
+        this.images = product.getImages();
+        this.imgUrl = this.images != null && !this.images.isEmpty() ? this.images.get(0) : product.getImgUrl();
         this.isPublished = product.getIsPublished();
         
         if(product.getCategory() != null){

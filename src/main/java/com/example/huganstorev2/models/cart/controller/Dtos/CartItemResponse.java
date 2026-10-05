@@ -25,7 +25,11 @@ public class CartItemResponse {
         this.productName = item.getVariant().getProduct().getName();
         this.size = item.getVariant().getSize();
         this.color = item.getVariant().getColor();
-        this.imgUrl = item.getVariant().getImgUrl();
+        this.imgUrl = item.getVariant().getImgUrl() != null && !item.getVariant().getImgUrl().isBlank()
+            ? item.getVariant().getImgUrl()
+            : item.getVariant().getProduct().getImages() != null && !item.getVariant().getProduct().getImages().isEmpty()
+                ? item.getVariant().getProduct().getImages().get(0)
+                : item.getVariant().getProduct().getImgUrl();
         this.price = item.getVariant().getPrice();
         this.quantity = item.getQuantity();
         this.subtotal = item.getVariant().getPrice()

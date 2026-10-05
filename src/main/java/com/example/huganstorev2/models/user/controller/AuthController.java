@@ -2,14 +2,14 @@ package com.example.huganstorev2.models.user.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
+import java.util.UUID;
 
 import com.example.huganstorev2.config.JwtService;
 import com.example.huganstorev2.models.user.entity.User;
@@ -49,18 +49,41 @@ public class AuthController {
     @Operation (summary = "Đăng nhập")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest request){
         try {
-            User user = userService.loginUser(request);
-            // Tạo token
-            String token = jwtService.generateToken(user.getEmail(), user.getRole());
+            String sessionId = UUID.randomUUID().toString();
+            User user = userService.loginUser(request, sessionId);
+            String token = jwtService.generateToken(user.getEmail(), user.getRole(), sessionId);
             LoginResponse response = new LoginResponse(
-                "Đăng nhập thành công",
                 token,
+                "Đăng nhập thành công",
                 user
             );
             return ResponseEntity.ok(response);
         } catch(RuntimeException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
+    }
+
+    @PostMapping("/heartbeat")
+    @Operation(summary = "Duy trì phiên đăng nhập hiện tại")
+    public ResponseEntity<?> heartbeat() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (String) auth.getPrincipal();
+        String sessionId = (String) auth.getDetails();
+        if (!userService.refreshSession(email, sessionId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+        return ResponseEntity.ok(Map.of("message", "Phiên đăng nhập vẫn hoạt động."));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Đăng xuất và giải phóng phiên đăng nhập")
+    public ResponseEntity<?> logout() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = (String) auth.getPrincipal();
+        String sessionId = (String) auth.getDetails();
+        userService.releaseSession(email, sessionId);
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công."));
     }
 
     @PutMapping("/change-password")

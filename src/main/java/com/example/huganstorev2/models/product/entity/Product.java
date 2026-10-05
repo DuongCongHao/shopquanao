@@ -8,8 +8,11 @@ import java.util.ArrayList;
 import com.example.huganstorev2.models.category.entity.Category;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,6 +38,11 @@ public class Product {
     private BigDecimal price;
     @Column (name = "img_url")
     private String imgUrl;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_data", columnDefinition = "TEXT")
+    private List<String> images = new ArrayList<>();
     @Column (name = "is_published")
     private Boolean isPublished = false;
     
@@ -73,6 +81,7 @@ public class Product {
     public String getDescription(){return description;}
     public BigDecimal getPrice(){return price;}
     public String getImgUrl(){return imgUrl;}
+    public List<String> getImages(){return images;}
     public Boolean getIsPublished(){return isPublished;}
     public LocalDateTime getCreatedAt(){return createdAt;}
     public LocalDateTime getUpdatedAt(){return updatedAt;}
@@ -84,6 +93,7 @@ public class Product {
     public void setDescription(String description){this.description=description;}
     public void setPrice(BigDecimal price){this.price=price;}
     public void setImgUrl(String imgUrl){this.imgUrl=imgUrl;}
+    public void setImages(List<String> images){this.images=images != null ? images : new ArrayList<>();}
     public void setIsPublished(Boolean isPublished){this.isPublished=isPublished;}
     public void setCategory(Category category){this.category=category;}
     public void setVariants(List<ProductVariant> variants) { this.variants = variants; }

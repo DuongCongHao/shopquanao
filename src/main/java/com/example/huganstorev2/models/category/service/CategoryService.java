@@ -42,7 +42,7 @@ public class CategoryService {
         .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục!"));
         
         existingCategory.setName(category.getName());
-        existingCategory.setSlug(category.getSlug());
+        existingCategory.setSlug(generateSlug(category.getName()));
 
         return categoryRepository.save(existingCategory);
     }

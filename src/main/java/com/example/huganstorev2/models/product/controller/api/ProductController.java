@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.huganstorev2.models.product.controller.Dtos.ProductRequest;
+import com.example.huganstorev2.models.product.controller.Dtos.ProductPopularityResponse;
 import com.example.huganstorev2.models.product.controller.Dtos.ProductResponse;
 import com.example.huganstorev2.models.product.service.ProductService;
 
@@ -33,6 +34,12 @@ public class ProductController {
     @Operation (summary = "Lấy danh sách sản phẩm")
     public ResponseEntity<List<ProductResponse>> getAllProduct(){
         return ResponseEntity.ok(productService.getAllProduct());
+    }
+
+    @GetMapping("/popularity")
+    @Operation(summary = "Thống kê số lượng đang trong giỏ và đã đặt theo sản phẩm")
+    public ResponseEntity<List<ProductPopularityResponse>> getProductPopularity(){
+        return ResponseEntity.ok(productService.getProductPopularity());
     }
 
     @GetMapping("/{id}")

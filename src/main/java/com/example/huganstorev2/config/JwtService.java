@@ -42,10 +42,11 @@ public class JwtService {
     // ═══════════════════════════════════════════════════
     // 1. SINH TOKEN
     // ═══════════════════════════════════════════════════
-    public String generateToken(String email, Role role) {
+    public String generateToken(String email, Role role, String sessionId) {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role.name()) 
+                .claim("sessionId", sessionId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
                 .signWith(signingKey, SignatureAlgorithm.HS256)
@@ -64,6 +65,10 @@ public class JwtService {
     // ═══════════════════════════════════════════════════
     public String extractRole(String token) {
         return extractAllClaims(token).get("role", String.class);
+    }
+
+    public String extractSessionId(String token) {
+        return extractAllClaims(token).get("sessionId", String.class);
     }
 
     // ═══════════════════════════════════════════════════
