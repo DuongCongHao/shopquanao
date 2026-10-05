@@ -51,6 +51,9 @@ public class CustomerOrder {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column
+    private LocalDateTime statusChangedAt;
+
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CustomerOrderItem> items = new ArrayList<>();
 

@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import com.example.huganstorev2.exception.ResourceNotFoundException;
 import com.example.huganstorev2.models.order.dto.CreateOrderItemRequest;
@@ -21,6 +23,8 @@ import com.example.huganstorev2.models.product.repository.VariantRepository;
 
 @Service
 public class CustomerOrderService {
+    private static final Logger LOGGER = Logger.getLogger(CustomerOrderService.class.getName());
+    private static final int TERMINAL_ORDER_RETENTION_DAYS = 7;
     private static final List<String> ORDER_STATUSES = List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED");
     private static final Map<String, List<String>> ALLOWED_STATUS_TRANSITIONS = Map.of(
         "PENDING", List.of("CONFIRMED", "CANCELLED"),
@@ -56,6 +60,7 @@ public class CustomerOrderService {
         order.setStatus("PENDING");
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
+        order.setStatusChangedAt(order.getCreatedAt());
 
         BigDecimal total = BigDecimal.ZERO;
         for (CreateOrderItemRequest requestedItem : request.getItems()) {
@@ -113,8 +118,11 @@ public class CustomerOrderService {
                     .getOrDefault(order.getStatus(), List.of()).contains(status)) {
                 throw new IllegalArgumentException("Không thể chuyển đơn " + order.getStatus() + " sang " + status + ".");
             }
-            if (status.equals("CANCELLED") && !status.equals(order.getStatus())) {
-                restoreInventory(order);
+            if (!status.equals(order.getStatus())) {
+                if (status.equals("CANCELLED")) {
+                    restoreInventory(order);
+                }
+                order.setStatusChangedAt(LocalDateTime.now());
             }
             order.setStatus(status);
         }
@@ -124,6 +132,19 @@ public class CustomerOrderService {
 
     public void deleteOrder(Long id) {
         orderRepository.delete(findOrder(id));
+    }
+
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void deleteExpiredTerminalOrders() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(TERMINAL_ORDER_RETENTION_DAYS);
+        List<CustomerOrder> expiredOrders = orderRepository.findExpiredTerminalOrders(cutoff);
+        if (!expiredOrders.isEmpty()) {
+            orderRepository.deleteAll(expiredOrders);
+            LOGGER.info(() -> "Automatically deleted " + expiredOrders.size()
+                + " completed or cancelled orders older than "
+                + TERMINAL_ORDER_RETENTION_DAYS + " days.");
+        }
     }
 
     private CustomerOrder findOrder(Long id) {
