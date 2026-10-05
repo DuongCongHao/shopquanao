@@ -57,7 +57,13 @@ public class SecurityConfig {
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/products/popularity").permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/v1/products",
+                    "/api/v1/products/**",
+                    "/api/v1/categories",
+                    "/api/v1/categories/**"
+                ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/orders", "/api/v1/orders/").permitAll()
                 // Tất cả các API khác đều cần xác thực
                 .anyRequest().authenticated()
