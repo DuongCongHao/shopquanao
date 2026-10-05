@@ -132,6 +132,14 @@ public class UserService {
         ) > 0;
     }
 
+    public boolean hasReplacementSession(String email, String sessionId) {
+        return userRepository.existsByEmailAndActiveSessionIdNotAndSessionLastSeenAtGreaterThanEqual(
+            email,
+            sessionId,
+            LocalDateTime.now().minusMinutes(SESSION_TIMEOUT_MINUTES)
+        );
+    }
+
     // Đăng xuất
     @Transactional
     public void releaseSession(

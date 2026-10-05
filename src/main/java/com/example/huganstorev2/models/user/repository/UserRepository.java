@@ -81,4 +81,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
         String sessionId,
         LocalDateTime expiredBefore
     );
+
+    boolean existsByEmailAndActiveSessionIdNotAndSessionLastSeenAtGreaterThanEqual(
+        String email,
+        String sessionId,
+        LocalDateTime expiredBefore
+    );
 }

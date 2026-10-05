@@ -70,8 +70,11 @@ public class AuthController {
         String email = (String) auth.getPrincipal();
         String sessionId = (String) auth.getDetails();
         if (!userService.refreshSession(email, sessionId)) {
+            String message = userService.hasReplacementSession(email, sessionId)
+                ? "Tài khoản đang được đăng nhập ở nơi khác. Phiên này đã bị đăng xuất."
+                : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                .body(message);
         }
         return ResponseEntity.ok(Map.of("message", "Phiên đăng nhập vẫn hoạt động."));
     }

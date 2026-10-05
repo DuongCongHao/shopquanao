@@ -22,6 +22,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     // BỎ QUA CÁC URL KHÔNG CẦN XÁC THỰC
     @Override
@@ -71,7 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     sessionId,
                     java.time.LocalDateTime.now().minusMinutes(UserService.SESSION_TIMEOUT_MINUTES)
             )) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                String message = sessionId != null && userService.hasReplacementSession(email, sessionId)
+                    ? "Tài khoản đang được đăng nhập ở nơi khác. Phiên này đã bị đăng xuất."
+                    : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write(message);
                 return;
             }
 
