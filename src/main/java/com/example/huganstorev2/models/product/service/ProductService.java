@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -298,14 +299,7 @@ public class ProductService {
         }
 
 
-        Category category =
-                categoryRepository
-                        .findById(request.getCategoryId())
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException(
-                                        "Không tìm thấy danh mục!"
-                                )
-                        );
+        List<Category> categories = resolveCategories(request);
 
 
         Product product = new Product();
@@ -316,7 +310,8 @@ public class ProductService {
         product.setPrice(request.getPrice());
         product.setImgUrl(request.getImgUrl());
         product.setImages(request.getImages());
-        product.setCategory(category);
+        product.setCategories(categories);
+        product.setCategory(categories.get(0));
 
         product.setIsPublished(
                 request.getIsPublished() != null
@@ -426,23 +421,10 @@ public class ProductService {
         }
 
 
-        if (request.getCategoryId() != null
-                && !existingProduct
-                    .getCategory()
-                    .getId()
-                    .equals(request.getCategoryId())) {
-
-            Category category =
-                    categoryRepository
-                            .findById(request.getCategoryId())
-                            .orElseThrow(
-                                    () ->
-                                        new ResourceNotFoundException(
-                                                "Không tìm thấy danh mục!"
-                                        )
-                            );
-
-            existingProduct.setCategory(category);
+        if (request.getCategoryIds() != null || request.getCategoryId() != null) {
+            List<Category> categories = resolveCategories(request);
+            existingProduct.setCategories(categories);
+            existingProduct.setCategory(categories.get(0));
         }
 
 
@@ -539,6 +521,31 @@ public class ProductService {
 
 
         return new ProductResponse(savedProduct);
+    }
+
+
+    private List<Category> resolveCategories(ProductRequest request) {
+        List<Long> categoryIds = request.getCategoryIds();
+        if (categoryIds == null) {
+            categoryIds = request.getCategoryId() == null
+                    ? List.of()
+                    : List.of(request.getCategoryId());
+        }
+
+        if (categoryIds.isEmpty()) {
+            throw new ResourceNotFoundException("Vui lòng chọn ít nhất một danh mục!");
+        }
+
+        Set<Long> uniqueIds = new LinkedHashSet<>(categoryIds);
+        List<Category> categories = new ArrayList<>();
+        for (Long categoryId : uniqueIds) {
+            if (categoryId == null) {
+                throw new ResourceNotFoundException("Danh mục không hợp lệ!");
+            }
+            categories.add(categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!")));
+        }
+        return categories;
     }
 
 

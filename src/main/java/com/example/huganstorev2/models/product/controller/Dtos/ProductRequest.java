@@ -14,5 +14,6 @@ public class ProductRequest {
     private List<String> images;
     private Boolean isPublished;
     private Long categoryId;
+    private List<Long> categoryIds;
     private List<VariantRequest> variants;
 }

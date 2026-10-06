@@ -50,6 +50,15 @@ public class CustomerOrderItem {
     @Column(nullable = false)
     private BigDecimal unitPrice;
 
+    private BigDecimal garmentPrice;
+
     @Column(nullable = false)
     private BigDecimal subtotal;
+
+    private String printType;
+
+    @Column(columnDefinition = "TEXT")
+    private String note;
+
+    private BigDecimal printPrice;
 }

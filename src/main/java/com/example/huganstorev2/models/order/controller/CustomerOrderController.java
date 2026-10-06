@@ -1,6 +1,7 @@
 package com.example.huganstorev2.models.order.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,12 @@ public class CustomerOrderController {
     @PreAuthorize("permitAll()")
     public ResponseEntity<CustomerOrderResponse> createOrder(@RequestBody CreateOrderRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
+    }
+
+    @GetMapping("/printing-capability")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<Map<String, Boolean>> getPrintingCapability() {
+        return ResponseEntity.ok(Map.of("printingSupported", true));
     }
 
     @GetMapping

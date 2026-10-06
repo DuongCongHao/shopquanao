@@ -17,7 +17,11 @@ public class CustomerOrderItemResponse {
     private String color;
     private Integer quantity;
     private BigDecimal price;
+    private BigDecimal garmentPrice;
     private BigDecimal subtotal;
+    private String printType;
+    private String note;
+    private BigDecimal printPrice;
 
     public CustomerOrderItemResponse(CustomerOrderItem item) {
         id = item.getId();
@@ -29,6 +33,12 @@ public class CustomerOrderItemResponse {
         color = item.getColor();
         quantity = item.getQuantity();
         price = item.getUnitPrice();
+        garmentPrice = item.getGarmentPrice() != null
+            ? item.getGarmentPrice()
+            : item.getUnitPrice();
         subtotal = item.getSubtotal();
+        printType = item.getPrintType();
+        note = item.getNote();
+        printPrice = item.getPrintPrice();
     }
 }

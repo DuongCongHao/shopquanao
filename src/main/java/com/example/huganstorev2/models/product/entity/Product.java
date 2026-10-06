@@ -17,6 +17,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -49,6 +51,14 @@ public class Product {
     @ManyToOne 
     @JoinColumn (name = "category_id")
     private Category category;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "product_categories",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private List<Category> categories = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductVariant> variants = new ArrayList<>();
@@ -86,6 +96,7 @@ public class Product {
     public LocalDateTime getCreatedAt(){return createdAt;}
     public LocalDateTime getUpdatedAt(){return updatedAt;}
     public Category getCategory(){return category;}
+    public List<Category> getCategories(){return categories;}
     public List<ProductVariant> getVariants(){return variants;}
 
     public void setName(String name){this.name=name;}
@@ -96,6 +107,7 @@ public class Product {
     public void setImages(List<String> images){this.images=images != null ? images : new ArrayList<>();}
     public void setIsPublished(Boolean isPublished){this.isPublished=isPublished;}
     public void setCategory(Category category){this.category=category;}
+    public void setCategories(List<Category> categories){this.categories=categories != null ? categories : new ArrayList<>();}
     public void setVariants(List<ProductVariant> variants) { this.variants = variants; }
     public void setCreatedAt(LocalDateTime createdAt) {this.createdAt=createdAt;}
     public void setUpdatedAt(LocalDateTime updatedAt) {this.updatedAt=updatedAt;}

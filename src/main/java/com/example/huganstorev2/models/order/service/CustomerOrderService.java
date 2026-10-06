@@ -24,6 +24,8 @@ import com.example.huganstorev2.models.product.repository.VariantRepository;
 @Service
 public class CustomerOrderService {
     private static final Logger LOGGER = Logger.getLogger(CustomerOrderService.class.getName());
+    private static final BigDecimal DECAL_PRINT_PRICE = BigDecimal.valueOf(50_000);
+    private static final BigDecimal PU_PRINT_PRICE = BigDecimal.valueOf(100_000);
     private static final int TERMINAL_ORDER_RETENTION_DAYS = 7;
     private static final List<String> ORDER_STATUSES = List.of("PENDING", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED");
     private static final Map<String, List<String>> ALLOWED_STATUS_TRANSITIONS = Map.of(
@@ -74,7 +76,16 @@ public class CustomerOrderService {
                 throw new IllegalArgumentException("Số lượng đặt vượt quá tồn kho của " + variant.getProduct().getName() + ".");
             }
 
-            BigDecimal subtotal = variant.getPrice().multiply(BigDecimal.valueOf(requestedItem.getQuantity()));
+            String printType = requestedItem.getPrintType() == null
+                ? null
+                : requestedItem.getPrintType().trim().toUpperCase();
+            BigDecimal printPrice = resolvePrintPrice(printType);
+            String note = requestedItem.getNote() == null ? null : requestedItem.getNote().trim();
+            if (note != null && note.length() > 2000) {
+                throw new IllegalArgumentException("Ghi chú in không được vượt quá 2000 ký tự.");
+            }
+            BigDecimal unitTotal = variant.getPrice().add(printPrice);
+            BigDecimal subtotal = unitTotal.multiply(BigDecimal.valueOf(requestedItem.getQuantity()));
             CustomerOrderItem item = new CustomerOrderItem();
             item.setProductId(variant.getProduct().getId());
             item.setVariantId(variant.getId());
@@ -87,7 +98,11 @@ public class CustomerOrderService {
             item.setSize(variant.getSize());
             item.setColor(variant.getColor());
             item.setQuantity(requestedItem.getQuantity());
-            item.setUnitPrice(variant.getPrice());
+            item.setGarmentPrice(variant.getPrice());
+            item.setUnitPrice(unitTotal);
+            item.setPrintType(printType);
+            item.setPrintPrice(printPrice);
+            item.setNote(note);
             item.setSubtotal(subtotal);
             order.addItem(item);
 
@@ -97,6 +112,15 @@ public class CustomerOrderService {
 
         order.setTotalPrice(total);
         return new CustomerOrderResponse(orderRepository.save(order));
+    }
+
+    private BigDecimal resolvePrintPrice(String printType) {
+        if (printType == null || printType.isBlank()) return BigDecimal.ZERO;
+        return switch (printType) {
+            case "DECAL" -> DECAL_PRINT_PRICE;
+            case "PU" -> PU_PRINT_PRICE;
+            default -> throw new IllegalArgumentException("Loại in không hợp lệ.");
+        };
     }
 
     @Transactional(readOnly = true)
