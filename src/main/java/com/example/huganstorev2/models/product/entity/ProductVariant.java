@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 @Entity 
 @Table (name = "product_variant")
 public class ProductVariant {
+    public static final int UNLIMITED_STOCK = Integer.MAX_VALUE;
+
     @Id 
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,7 +27,7 @@ public class ProductVariant {
     @Column (nullable = false)
     private BigDecimal price;
     @Column (nullable = false)
-    private Integer stock;
+    private Integer stock = UNLIMITED_STOCK;
     @Column (nullable = false)
     private String sku; // Mã hàng
     @Column (name = "img_url")

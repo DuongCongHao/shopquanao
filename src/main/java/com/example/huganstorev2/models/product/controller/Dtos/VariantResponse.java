@@ -21,7 +21,7 @@ public class VariantResponse {
         this.size=variant.getSize();
         this.color=variant.getColor();
         this.price=variant.getPrice();
-        this.stock=variant.getStock();
+        this.stock=ProductVariant.UNLIMITED_STOCK;
         this.sku=variant.getSku();
         this.imgUrl=variant.getImgUrl();
     }

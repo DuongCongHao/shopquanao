@@ -3,6 +3,7 @@ package com.example.huganstorev2.models.cart.controller.Dtos;
 import java.math.BigDecimal;
 
 import com.example.huganstorev2.models.cart.entity.CartItem;
+import com.example.huganstorev2.models.product.entity.ProductVariant;
 
 import lombok.Data;
 
@@ -34,6 +35,6 @@ public class CartItemResponse {
         this.quantity = item.getQuantity();
         this.subtotal = item.getVariant().getPrice()
                         .multiply(BigDecimal.valueOf(item.getQuantity()));
-        this.stock = item.getVariant().getStock();
+        this.stock = ProductVariant.UNLIMITED_STOCK;
     }
 }

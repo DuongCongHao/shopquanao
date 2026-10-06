@@ -57,11 +57,8 @@ public class CartService {
         ProductVariant variant = variantRepository.findById(request.getVariantId())
         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm!"));
 
-        if(variant.getStock() <= 0){
-            throw new RuntimeException("Sản phẩm đã hết hàng!");
-        }
-        if(request.getQuantity() > variant.getStock()){
-            throw new RuntimeException("Số lượng vượt quá tồn kho!");
+        if(request.getQuantity() == null || request.getQuantity() <= 0){
+            throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         }
 
         CartItem existingItem = cart.getItems().stream()
@@ -83,10 +80,6 @@ public class CartService {
             itemToSave = newItem;
         }
 
-        if(newQuantity > variant.getStock()){
-            throw new RuntimeException("Tổng sản phẩm vượt quá tồn kho!");
-        }
-
         itemToSave.setQuantity(newQuantity);
 
         cartItemRepository.save(itemToSave);
@@ -103,12 +96,8 @@ public class CartService {
             throw new RuntimeException("Không có quyền thao tác!");
         }
 
-        ProductVariant variant = cartItem.getVariant();
-        if(quantity > variant.getStock()){
-            throw new RuntimeException("Số lượng vượt quá tồn kho!");
-        }
         if(quantity == null || quantity <= 0){
-            throw new RuntimeException("Số lượng phải lớn hơn 01");
+            throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         }
 
         cartItem.setQuantity(quantity);

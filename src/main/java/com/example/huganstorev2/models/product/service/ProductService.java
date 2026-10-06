@@ -348,7 +348,7 @@ public class ProductService {
                                                 : request.getPrice()
                                 );
 
-                                variant.setStock(v.getStock());
+                                variant.setStock(ProductVariant.UNLIMITED_STOCK);
                                 variant.setSku(v.getSku());
                                 variant.setImgUrl(v.getImgUrl());
 
@@ -491,9 +491,7 @@ public class ProductService {
                                                 : request.getPrice()
                                 );
 
-                                variant.setStock(
-                                        v.getStock()
-                                );
+                                variant.setStock(ProductVariant.UNLIMITED_STOCK);
 
                                 variant.setSku(
                                         v.getSku()

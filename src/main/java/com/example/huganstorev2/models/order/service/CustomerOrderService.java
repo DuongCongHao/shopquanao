@@ -72,10 +72,6 @@ public class CustomerOrderService {
 
             ProductVariant variant = variantRepository.findById(requestedItem.getVariantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm."));
-            if (variant.getStock() < requestedItem.getQuantity()) {
-                throw new IllegalArgumentException("Số lượng đặt vượt quá tồn kho của " + variant.getProduct().getName() + ".");
-            }
-
             String printType = requestedItem.getPrintType() == null
                 ? null
                 : requestedItem.getPrintType().trim().toUpperCase();
@@ -106,7 +102,6 @@ public class CustomerOrderService {
             item.setSubtotal(subtotal);
             order.addItem(item);
 
-            variant.setStock(variant.getStock() - requestedItem.getQuantity());
             total = total.add(subtotal);
         }
 
@@ -143,9 +138,6 @@ public class CustomerOrderService {
                 throw new IllegalArgumentException("Không thể chuyển đơn " + order.getStatus() + " sang " + status + ".");
             }
             if (!status.equals(order.getStatus())) {
-                if (status.equals("CANCELLED")) {
-                    restoreInventory(order);
-                }
                 order.setStatusChangedAt(LocalDateTime.now());
             }
             order.setStatus(status);
@@ -173,15 +165,6 @@ public class CustomerOrderService {
 
     private CustomerOrder findOrder(Long id) {
         return orderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng."));
-    }
-
-    private void restoreInventory(CustomerOrder order) {
-        order.getItems().forEach(item -> {
-            if (item.getVariantId() == null) return;
-            variantRepository.findById(item.getVariantId()).ifPresent(variant ->
-                variant.setStock(variant.getStock() + item.getQuantity())
-            );
-        });
     }
 
     private void requireText(String value, String message) {
