@@ -198,7 +198,6 @@ public class ProductService {
                                                 second.getName()
                                         );
                         })
-                        .limit(10)
                         .toList();
 
 
